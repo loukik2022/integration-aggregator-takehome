@@ -10,6 +10,19 @@ submission step. Your fork's default branch, with a green CI run on the final
 commit, is the deliverable. Open a pull request against this repository only
 to fix an error in the problem statement itself.
 
+## About your time
+
+8–12 days is a serious investment, and not everyone who completes this is
+selected. Know that before you start. We ask for it anyway because the work
+mirrors the job, and we have tried to make every hour count: the setup links
+below are curated so you research the problem, not the tooling, and the review
+process is defined so finished work is never ignored.
+
+Whatever the outcome, the result stays in your public fork under your name: a
+deployed, CI-verified service integrating OAuth, Kubernetes, and a secrets
+manager. That is a portfolio piece for any application, not just this one.
+Thank you for considering us.
+
 ## Background
 
 Product teams keep re-implementing OAuth for the same public providers (Google,
