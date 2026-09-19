@@ -1,7 +1,7 @@
 # Take-Home Problem: Integration Aggregator
 
 **Role:** Junior Software Engineer
-**Expected effort:** 2–3 days of focused work, completed within one week.
+**Expected effort:** 8–12 days of focused work, completed within three weeks.
 **Language:** Go or Python (pick one, use it idiomatically).
 **Cost:** Everything runs locally or on free tiers. No paid services are
 required or accepted.
@@ -39,7 +39,7 @@ Work in this order and do not skip ahead:
 3. Only then: CI, publishing, and the perf test.
 
 Steps 1 and 2 are most of the value and most of the difficulty. CI and perf
-testing automate what already works. Starting there wastes your week.
+testing automate what already works. Starting there wastes your time.
 
 **Local cluster**
 
