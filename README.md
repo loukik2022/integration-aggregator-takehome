@@ -1,14 +1,15 @@
 # Take-Home Problem: Integration Aggregator
 
-**Role:** Junior Software Engineer
-**Expected effort:** 8–12 days of focused work, completed within three weeks.
-**Language:** Go or Python (pick one, use it idiomatically).
-**Cost:** Everything runs locally or on free tiers. No paid services are
-required or accepted.
-**Workflow:** Fork this repository and build in your public fork. There is no
-submission step. Your fork's default branch, with a green CI run on the final
-commit, is the deliverable. Open a pull request against this repository only
-to fix an error in the problem statement itself.
+| | |
+|---|---|
+| **Role** | Junior Software Engineer |
+| **Effort** | 8–12 days of focused work, completed within three weeks |
+| **Language** | Go or Python — pick one, use it idiomatically |
+| **Cost** | Free. Local tools and free tiers only, no paid services |
+| **Deliverable** | Your public fork, green CI on the final commit |
+
+Fork this repository and build in your fork. There is no submission step.
+Open a pull request here only to fix an error in this document.
 
 ## About your time
 
@@ -26,17 +27,18 @@ Thank you for considering us.
 ## Background
 
 Product teams keep re-implementing OAuth for the same public providers (Google,
-GitHub). We want one internal service that owns provider registration, the
-OAuth authorization-code flow, and token storage, so other services can ask it
-for a user's access token instead of handling OAuth themselves.
+GitHub). We want one internal service other services can ask for a user's
+access token, instead of each handling OAuth themselves.
 
-Tokens are secrets. They must live in a secrets manager, never in application
-state, files, or logs. You will use [OpenBao](https://openbao.org) with the
-[openbao-plugin-secrets-oauthapp](https://github.com/openbao/openbao-plugin-secrets-oauthapp)
-plugin, which implements the authorization-code exchange, stores tokens, and
-refreshes them before expiry. Your service orchestrates the flow and exposes a
-clean API. It does not implement OAuth itself and it never persists a token
-outside OpenBao.
+The division of labor:
+
+- **[OpenBao](https://openbao.org)** holds every secret: OAuth client secrets
+  and all tokens. Tokens never live in application files or logs.
+- **[openbao-plugin-secrets-oauthapp](https://github.com/openbao/openbao-plugin-secrets-oauthapp)**
+  does the OAuth: authorization-code exchange, token storage, refresh before
+  expiry.
+- **Your service** orchestrates: registers providers, drives the consent flow,
+  and exposes the API. It implements no OAuth and persists no tokens.
 
 ## Getting set up
 
