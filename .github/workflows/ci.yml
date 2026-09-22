@@ -1,0 +1,119 @@
+name: CI & Deployment Pipeline
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test-and-verify:
+    name: Build, Test, Deploy & Benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run Python unit tests
+        run: |
+          python -m pytest -v --tb=short tests/
+
+      - name: Setup Minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          minikube-version: 1.34.0
+          container-runtime: docker
+          driver: docker
+          cpus: 2
+          memory: 4096m
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.2.0
+
+      - name: Run idempotent 'make up'
+        run: |
+          make up
+
+      - name: Verify idempotence (run 'make up' a second time)
+        run: |
+          echo "Verifying 'make up' idempotency..."
+          make up
+
+      - name: Setup Port Forwarding for Testing
+        run: |
+          echo "Starting port-forward for integration-aggregator (8080) and mock-oauth2-server (8081)..."
+          nohup kubectl port-forward svc/integration-aggregator 8080:8080 >/dev/null 2>&1 &
+          nohup kubectl port-forward svc/mock-oauth2-server 8081:8080 >/dev/null 2>&1 &
+          sleep 5
+
+      - name: Execute End-to-End Smoke Test
+        env:
+          SERVICE_URL: "http://localhost:8080"
+          MOCK_SERVER_URL: "http://localhost:8081"
+        run: |
+          bash scripts/smoke-test.sh
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run Performance Benchmark
+        env:
+          TARGET_URL: "http://localhost:8080"
+          PROVIDER: "mock-oidc"
+          USER: "alice"
+        run: |
+          bash scripts/perf-test.sh
+
+      - name: Upload Performance Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: PERF.md
+          if-no-files-found: error
+
+      - name: Package Helm Chart
+        run: |
+          mkdir -p dist
+          helm package ./chart/integration-aggregator -d dist/
+
+      - name: Log in to GitHub Container Registry (ghcr.io)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Container Image to ghcr.io
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository }}
+          # Convert to lowercase
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          docker tag integration-aggregator:latest $IMAGE_ID:latest
+          docker tag integration-aggregator:latest $IMAGE_ID:${{ github.sha }}
+          docker push $IMAGE_ID:latest
+          docker push $IMAGE_ID:${{ github.sha }}
+
+      - name: Publish Helm Chart to ghcr.io (OCI)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        run: |
+          CHART_NAME=$(ls dist/*.tgz)
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[A-Z]' '[a-z]')
+          helm push ${CHART_NAME} oci://ghcr.io/${OWNER_LOWER}
