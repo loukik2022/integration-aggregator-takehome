@@ -1,0 +1,80 @@
+# Default values for integration-aggregator.
+
+replicaCount: 1
+
+image:
+  repository: integration-aggregator
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 8080
+
+openbao:
+  address: "http://openbao:8200"
+  mountPath: "oauth2"
+  # Existing secret name holding the OpenBao client token
+  tokenSecret: "integration-aggregator-openbao-token"
+  tokenKey: "token"
+  timeout: 10.0
+
+app:
+  workerConcurrency: 5
+  stateTtlSeconds: 600
+  requestTtlSeconds: 600
+  logLevel: "INFO"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 8080
+  initialDelaySeconds: 2
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 2
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

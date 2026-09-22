@@ -1,0 +1,18 @@
+# OpenBao Helm Chart values for development mode with secrets-oauthapp plugin
+server:
+  dev:
+    enabled: true
+    devRootToken: "root"
+
+  extraArgs: "-dev-plugin-dir=/bao/plugins"
+
+  volumes:
+    - name: plugins
+      emptyDir: {}
+
+  volumeMounts:
+    - name: plugins
+      mountPath: /bao/plugins
+
+injector:
+  enabled: false
