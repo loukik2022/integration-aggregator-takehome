@@ -1,0 +1,28 @@
+# Example configuration for provisioning providers with Terraform
+openbao_address      = "http://localhost:8200"
+openbao_token        = "root"
+kubernetes_namespace = "default"
+
+oauth_providers = {
+  github = {
+    provider      = "github"
+    client_id     = "YOUR_GITHUB_CLIENT_ID"
+    client_secret = "YOUR_GITHUB_CLIENT_SECRET"
+    scopes        = ["read:user", "user:email"]
+  }
+  google = {
+    provider      = "google"
+    client_id     = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+    client_secret = "YOUR_GOOGLE_CLIENT_SECRET"
+    scopes        = ["openid", "email", "profile"]
+  }
+  mock-oidc = {
+    provider      = "oidc"
+    client_id     = "test-client-id"
+    client_secret = "test-client-secret"
+    provider_options = {
+      issuer_url = "http://mock-oauth2-server:8080/default"
+    }
+    scopes = ["openid", "profile"]
+  }
+}

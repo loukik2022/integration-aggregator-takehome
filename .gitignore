@@ -62,3 +62,11 @@ Thumbs.db
 *.tgz
 .minikube/
 kubeconfig
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfvars
+!*.tfvars.example

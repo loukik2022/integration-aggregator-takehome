@@ -18,10 +18,22 @@ kubectl exec "${OPENBAO_POD}" -- env BAO_TOKEN="${ROOT_TOKEN}" bao status || tru
 echo "==> Inspecting oauthapp plugin binary in pod..."
 PLUGIN_PATH="/bao/plugins/openbao-plugin-secrets-oauthapp"
 if ! kubectl exec "${OPENBAO_POD}" -- test -f "${PLUGIN_PATH}"; then
-    echo "Plugin not found in pod. Downloading and installing into pod..."
-    TMP_DIR=$(mktemp -d)
-    curl -fsSL https://github.com/openbao/openbao-plugin-secrets-oauthapp/releases/download/v3.4.0/openbao-plugin-secrets-oauthapp-v3.4.0-linux-amd64.tar.xz | tar -xJ -C "${TMP_DIR}"
-    PLUGIN_BIN=$(find "${TMP_DIR}" -type f | head -n1)
+    POD_ARCH=$(kubectl exec "${OPENBAO_POD}" -- uname -m | tr -d '\r\n')
+    case "${POD_ARCH}" in
+        x86_64|amd64)
+            ARCH_SUFFIX="linux-amd64"
+            ;;
+        aarch64|arm64)
+            ARCH_SUFFIX="linux-arm64"
+            ;;
+        *)
+            echo "Warning: Unrecognized pod architecture '${POD_ARCH}', defaulting to linux-amd64"
+            ARCH_SUFFIX="linux-amd64"
+            ;;
+    esac
+    echo "Detected pod architecture: ${POD_ARCH} -> downloading ${ARCH_SUFFIX} binary..."
+    curl -fsSL "https://github.com/openbao/openbao-plugin-secrets-oauthapp/releases/download/v3.4.0/openbao-plugin-secrets-oauthapp-v3.4.0-${ARCH_SUFFIX}.tar.xz" | tar -xJ -C "${TMP_DIR}"
+    PLUGIN_BIN=$(find "${TMP_DIR}" -type f -perm -111 -o -type f | head -n1)
     kubectl cp "${PLUGIN_BIN}" "${OPENBAO_POD}:${PLUGIN_PATH}" 2>/dev/null || \
         kubectl exec -i "${OPENBAO_POD}" -- sh -c "cat > ${PLUGIN_PATH}" < "${PLUGIN_BIN}"
     kubectl exec "${OPENBAO_POD}" -- chmod +x "${PLUGIN_PATH}"
