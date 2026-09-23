@@ -31,9 +31,12 @@ if ! kubectl exec "${OPENBAO_POD}" -- test -f "${PLUGIN_PATH}"; then
             ARCH_SUFFIX="linux-amd64"
             ;;
     esac
+    TMP_DIR=$(mktemp -d)
+    ARCHIVE_PATH="${TMP_DIR}/plugin.tar.xz"
     echo "Detected pod architecture: ${POD_ARCH} -> downloading ${ARCH_SUFFIX} binary..."
-    curl -fsSL "https://github.com/openbao/openbao-plugin-secrets-oauthapp/releases/download/v3.4.0/openbao-plugin-secrets-oauthapp-v3.4.0-${ARCH_SUFFIX}.tar.xz" | tar -xJ -C "${TMP_DIR}"
-    PLUGIN_BIN=$(find "${TMP_DIR}" -type f -perm -111 -o -type f | head -n1)
+    curl -fsSL "https://github.com/openbao/openbao-plugin-secrets-oauthapp/releases/download/v3.4.0/openbao-plugin-secrets-oauthapp-v3.4.0-${ARCH_SUFFIX}.tar.xz" -o "${ARCHIVE_PATH}"
+    tar -xf "${ARCHIVE_PATH}" -C "${TMP_DIR}"
+    PLUGIN_BIN=$(find "${TMP_DIR}" -type f ! -name "*.tar.xz" | head -n1)
     kubectl cp "${PLUGIN_BIN}" "${OPENBAO_POD}:${PLUGIN_PATH}" 2>/dev/null || \
         kubectl exec -i "${OPENBAO_POD}" -- sh -c "cat > ${PLUGIN_PATH}" < "${PLUGIN_BIN}"
     kubectl exec "${OPENBAO_POD}" -- chmod +x "${PLUGIN_PATH}"
